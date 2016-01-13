@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">安盾监控</string>
+    <string name="dummy_button">路由器</string>
+    <string name="cell_title">茂荣科技</string>
+    <string name="ok">确定</string>
+    <string name="cancel">取消</string>
+    <string name="input_router_sn">请输入路由器序列号</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="title_activity_main">MainActivity</string>
+    <string name="action_settings">Settings</string>
+    <string name="section_format">Hello World from section: %1$d</string>
+</resources>

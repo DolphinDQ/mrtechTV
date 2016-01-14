@@ -1,0 +1,78 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="mrtech.fragment.NineViewFragment">
+
+    <TableLayout
+        android:id="@+id/cell_container"
+        style="@style/CellView">
+
+        <TableRow style="@style/CellRow">
+
+            <fragment
+                android:id="@+id/cell_0"
+                android:name="mrtech.fragment.CellFragment"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <fragment
+                android:id="@+id/cell_1"
+                android:name="mrtech.fragment.CellFragment"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+
+            <fragment
+                android:id="@+id/cell_2"
+                android:name="mrtech.fragment.CellFragment"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+        </TableRow>
+
+        <TableRow style="@style/CellRow">
+
+            <fragment
+                android:id="@+id/cell_3"
+                android:name="mrtech.fragment.CellFragment"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <fragment
+                android:id="@+id/cell_4"
+                android:name="mrtech.fragment.CellFragment"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <fragment
+                android:id="@+id/cell_5"
+                android:name="mrtech.fragment.CellFragment"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+        </TableRow>
+
+        <TableRow style="@style/CellRow">
+
+            <fragment
+                android:id="@+id/cell_6"
+                android:name="mrtech.fragment.CellFragment"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <fragment
+                android:id="@+id/cell_7"
+                android:name="mrtech.fragment.CellFragment"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <fragment
+                android:id="@+id/cell_8"
+                android:name="mrtech.fragment.CellFragment"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+        </TableRow>
+    </TableLayout>
+
+</FrameLayout>

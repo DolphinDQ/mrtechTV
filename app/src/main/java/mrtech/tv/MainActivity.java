@@ -18,7 +18,8 @@ import android.view.ViewGroup;
 
 import android.widget.TextView;
 
-import layout.CellFragment;
+import mrtech.fragment.CellFragment;
+
 
 public class MainActivity extends AppCompatActivity {
 
@@ -63,7 +64,6 @@ public class MainActivity extends AppCompatActivity {
         });
 
     }
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

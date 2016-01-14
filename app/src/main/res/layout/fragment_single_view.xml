@@ -1,0 +1,17 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="mrtech.fragment.SingleViewFragment">
+    <TableLayout
+        android:id="@+id/cell_container"
+        style="@style/CellView">
+        <TableRow style="@style/CellRow">
+            <fragment
+                android:id="@+id/cell_0"
+                android:name="mrtech.fragment.CellFragment"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+        </TableRow>
+    </TableLayout>
+</FrameLayout>

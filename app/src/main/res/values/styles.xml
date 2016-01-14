@@ -29,4 +29,13 @@
 
     <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
 
+    <style name="CellView">
+        <item name="android:stretchColumns">*</item>
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">match_parent</item>
+    </style>
+    <style name="CellRow">
+        <item name="android:layout_weight">1</item>
+    </style>
+
 </resources>

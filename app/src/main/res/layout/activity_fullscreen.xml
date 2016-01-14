@@ -3,59 +3,58 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#0099cc"
+    android:id="@+id/container"
     tools:context="mrtech.tv.FullscreenActivity">
 
     <TableLayout
-        android:id="@+id/container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:stretchColumns="0">
 
         <TableRow android:layout_weight="1">
-
-            <FrameLayout android:id="@+id/cell_container">
-
-            </FrameLayout>
-            <!-- The primary full-screen view. This can be replaced with whatever view
-                 is needed to present your content, e.g. VideoView, SurfaceView,
-                 TextureView, etc. -->
-            <!--<android.support.v4.view.ViewPager-->
-            <!--android:id="@+id/container"-->
-            <!--android:layout_width="match_parent"-->
-            <!--android:layout_height="match_parent"-->
-            <!--android:gravity="center"-->
-            <!--android:keepScreenOn="true"-->
-            <!--app:layout_behavior="@string/appbar_scrolling_view_behavior" />-->
-            <!-- This FrameLayout insets its children based on system windows using
-                 android:fitsSystemWindows. -->
             <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:fitsSystemWindows="true">
+                android:id="@+id/cell_view_container" />
 
-                <LinearLayout
-                    android:id="@+id/fullscreen_content_controls"
-                    style="?metaButtonBarStyle"
-                    android:layout_width="match_parent"
+            <LinearLayout
+                android:id="@+id/fullscreen_content_controls"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="bottom"
+                android:background="@color/black_overlay"
+                android:orientation="vertical"
+                tools:ignore="UselessParent">
+                <Button
+                    android:id="@+id/nine_view_btn"
+                    style="?metaButtonBarButtonStyle"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:background="@color/black_overlay"
-                    android:orientation="horizontal"
-                    tools:ignore="UselessParent">
-
-                    <Button
-                        android:id="@+id/dummy_button"
-                        style="?metaButtonBarButtonStyle"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/dummy_button" />
-
-                </LinearLayout>
-            </FrameLayout>
+                    android:layout_weight="1"
+                    android:text="@string/nine_view" />
+                <Button
+                    android:id="@+id/four_view_btn"
+                    style="?metaButtonBarButtonStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/four_view" />
+                <Button
+                    android:id="@+id/single_view_btn"
+                    style="?metaButtonBarButtonStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/single_view" />
+                <Button
+                    android:id="@+id/set_router_btn"
+                    style="?metaButtonBarButtonStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/set_router" />
+            </LinearLayout>
         </TableRow>
 
     </TableLayout>
-
-
 </FrameLayout>

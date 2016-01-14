@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,8 +19,14 @@ import mrtech.core.BroadcastSender;
 import mrtech.core.RuntimePool;
 import mrtech.smarthome.ipc.IPCManager;
 import mrtech.smarthome.ipc.IPCPlayer;
+import mrtech.smarthome.ipc.IPCamera;
+import mrtech.smarthome.ipc.Models.IPCStateChanged;
+import mrtech.smarthome.ipc.Models.IPCStatus;
+import mrtech.smarthome.ipc.VideoRenderer;
 import mrtech.smarthome.router.Router;
 import mrtech.tv.R;
+import rx.Subscription;
+import rx.functions.Action1;
 
 
 public class CellFragment extends Fragment {
@@ -31,39 +38,56 @@ public class CellFragment extends Fragment {
     private int mCellId;
     private Router mRouter;
     private IPCPlayer mPlayer;
+    private IPCManager mIPCManager;
+    private Subscription mSubscription;
+    private VideoRenderer mRenderer;
 
     public CellFragment() {
         // Required empty public constructor
     }
 
-    public static CellFragment newInstance(int cellId, String playId) {
-        CellFragment fragment = new CellFragment();
+    public void setCellId(int cellId) {
+        mCellId = cellId;
+    }
+
+    public static Bundle createArguments(int cellId, String playId) {
         Bundle args = new Bundle();
         args.putString(BroadcastSender.PARAM_PLAY_ID, playId);
         args.putInt(BroadcastSender.PARAM_CELL_ID, cellId);
-        fragment.setArguments(args);
+        return args;
+    }
+
+    public static CellFragment newInstance(int cellId, String playId) {
+        CellFragment fragment = new CellFragment();
+        fragment.setArguments(createArguments(cellId, playId));
         return fragment;
     }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         initArguments();
     }
+
     @Override
     public void onStart() {
         super.onStart();
         initBroadcastListener();
     }
+
     @Override
     public void onStop() {
         super.onStop();
+
         mContext.unregisterReceiver(mBroadcastReceiver);
     }
+
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 //        ((TextView) getView().findViewById(R.id.text_view)).setText("Index:" + mCellId);
-        initRouter();
+        final GLSurfaceView glSurfaceView = (GLSurfaceView) getView().findViewById(R.id.gl_view);
+        mRenderer = IPCManager.initGLSurfaceView(glSurfaceView);
     }
 
     private void initArguments() {
@@ -81,29 +105,67 @@ public class CellFragment extends Fragment {
         mBroadcastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                if (intent.getIntExtra(BroadcastSender.PARAM_CELL_ID, -1) != mCellId) return;
                 if (intent.getAction().equals(BroadcastSender.ACTION_PLAY_ALL)) {
-                    Toast.makeText(mContext, intent.getStringExtra(BroadcastSender.PARAM_PLAY_ID), Toast.LENGTH_SHORT).show();
-                    play(intent.getStringExtra(BroadcastSender.PARAM_PLAY_ID));
+                    play(null);
+                }
+                if (intent.getIntExtra(BroadcastSender.PARAM_CELL_ID, -1) != mCellId) return;
+                if (intent.getAction().equals(BroadcastSender.ACTION_PLAY)) {
+                    final String playId = intent.getStringExtra(BroadcastSender.PARAM_PLAY_ID);
+                    play(playId);
                 }
             }
         };
         mContext.registerReceiver(mBroadcastReceiver, intentFilter);
+
     }
 
-    private Void play(@Nullable String playId) {
+    private void play(@Nullable String playId) {
         if (playId == null) {
-            if (mPlayId == null) return null;
+            if (mPlayId == null) return;
         } else {
-            if (mPlayId.equals(playId)) return null;
+            if (playId.equals(mPlayId)) return;
             mPlayId = playId;
         }
-        getPlayer();
-        return null;
+        final IPCPlayer player = getPlayer();
+        if (player == null) return;
+        final IPCamera camera = mIPCManager.getCamera(playId);
+        mSubscription = mIPCManager.createEventManager(camera).subscribeCameraStatus(new Action1<IPCStateChanged>() {
+            @Override
+            public void call(IPCStateChanged ipcStateChanged) {
+                if (ipcStateChanged.getStatus() == IPCStatus.CONNECTED) {
+                    player.play(mIPCManager.getCamera(ipcStateChanged.getCameraId()));
+                }
+            }
+        });
+        player.play(camera);
+        setPlayControls(true);
     }
 
-    private void stop() {
+    private void setPlayControls(final boolean isPlay) {
+        new Handler(getContext().getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                final View view = getView();
+                if (view == null) return;
+                final View title = view.findViewById(R.id.cell_title);
+                if (isPlay){
+                    title.setVisibility(View.GONE);
+                }else {
+                    title.setVisibility(View.VISIBLE);
+                }
+            }
+        });
+    }
 
+
+    private void stop() {
+        setPlayControls(false);
+        if (mSubscription != null) {
+            mSubscription.unsubscribe();
+            mSubscription = null;
+        }
+        if (mPlayer != null)
+            mPlayer.stop();
     }
 
     @Override
@@ -140,35 +202,28 @@ public class CellFragment extends Fragment {
     }
 
     public IPCPlayer getPlayer() {
-        new Handler(getActivity().getMainLooper()).post(new Runnable() {
-            @Override
-            public void run() {
-                initRouter();
-            }
-        });
+        initRouter();
         return mPlayer;
     }
 
     private void initRouter() {
         final Router router = RuntimePool.getValue(Router.class);
-        final GLSurfaceView glSurfaceView = (GLSurfaceView) getView().findViewById(R.id.gl_view);
-        if (router == null) {
-            stop();
-            mPlayer = IPCManager.getInstance().createCameraPlayer(glSurfaceView);
-        } else {
-            if (!router.equals(mRouter)) {
-                try {
+        try {
+            if (router == null) {
+                stop();
+                mPlayer = null;
+            } else {
+                if (!router.equals(mRouter) || mPlayer == null) {
                     mRouter = router;
-                    mPlayer = router.getRouterSession()
+                    mIPCManager = router.getRouterSession()
                             .getCameraManager()
-                            .getIPCManager()
-                            .createCameraPlayer(glSurfaceView);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    mRouter = null;
-                    mPlayer = null;
+                            .getIPCManager();
+                    mPlayer = mIPCManager
+                            .createCameraPlayer(mRenderer);
                 }
             }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 

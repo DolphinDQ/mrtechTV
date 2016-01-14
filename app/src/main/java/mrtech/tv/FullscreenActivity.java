@@ -169,8 +169,7 @@ public class FullscreenActivity extends AppCompatActivity {
                             final List<IPCamera> cameraList = router.getRouterSession().getCameraManager().getIPCManager().getCameraList();
                             if (cameraList.size() > 0) {
                                 mCameraList = cameraList;
-                                Toast.makeText(mContext, router.getName() + "加载摄像头" + cameraList.size(), Toast.LENGTH_SHORT).show();
-
+//                                Toast.makeText(mContext, router.getName() + "加载摄像头" + cameraList.size(), Toast.LENGTH_SHORT).show();
                                 setViews(cameraList.size());
                             }
                         }
@@ -214,8 +213,14 @@ public class FullscreenActivity extends AppCompatActivity {
                     transaction.replace(R.id.cell_view_container, selectFragment(size));
                     // 执行事务
                     transaction.commit();
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                     if (mCameraList.size() > 0)
                         for (int i = 0; i < mCameraList.size(); i++) {
+                            if (i >= mCurrentSize) break;
                             final IPCamera camera = mCameraList.get(i);
                             BroadcastSender.sendPlayAction(mContext, i, camera.getDeviceId());
                         }
@@ -228,7 +233,7 @@ public class FullscreenActivity extends AppCompatActivity {
 
     private void setRouter(Router router) {
         final Router value = RuntimePool.getValue(Router.class);
-        if (value != null && !value.equals(router)) {
+        if (value == null || !value.equals(router)) {
             BroadcastSender.sendStopAllAction(mContext);
             RuntimePool.setValue(Router.class, router);
             BroadcastSender.sendSetRouterAction(mContext);
@@ -238,6 +243,11 @@ public class FullscreenActivity extends AppCompatActivity {
     @Override
     protected void onPostCreate(Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
+    }
+
+    @Override
+    protected void onPostResume() {
+        super.onPostResume();
         hideStatusBar();
     }
 

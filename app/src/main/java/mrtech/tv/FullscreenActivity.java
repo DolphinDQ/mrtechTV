@@ -1,7 +1,10 @@
 package mrtech.tv;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
@@ -11,6 +14,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.InputType;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -25,6 +29,7 @@ import mrtech.core.RuntimePool;
 import mrtech.fragment.FourViewFragment;
 import mrtech.fragment.NineViewFragment;
 import mrtech.fragment.SingleViewFragment;
+import mrtech.smarthome.ipc.IPCManager;
 import mrtech.smarthome.ipc.IPCamera;
 import mrtech.smarthome.router.Router;
 import mrtech.smarthome.router.RouterManager;
@@ -37,8 +42,12 @@ import rx.functions.Action1;
  */
 public class FullscreenActivity extends AppCompatActivity {
 
-    private SingleViewFragment mSingleViewFragment;
-    private int mCurrentSize;
+    private boolean readyExit;
+    private View mControlMenu;
+    private View mSettingsBtn;
+    private BroadcastReceiver mBroadcastReceiver;
+    private Fragment mCurrentFragment;
+    private long mLastChangeFragmentTime;
 
     private static void trace(String msg) {
         Log.e(FullscreenActivity.class.getName(), msg);
@@ -49,6 +58,7 @@ public class FullscreenActivity extends AppCompatActivity {
     private ArrayList<Subscription> subscriptions = new ArrayList<>();
     private HashMap<Integer, Class<? extends Fragment>> mFragments = new HashMap<>();
     private List<IPCamera> mCameraList = new ArrayList<>();
+    private ArrayList<String> mSelectedCameraIds = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,9 +66,37 @@ public class FullscreenActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_fullscreen);
         getSupportActionBar().hide();
+        initBroadcastReceiver();
         initRouterManager();
         initFragment();
         initControls();
+    }
+
+    private void initBroadcastReceiver() {
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(BroadcastSender.ACTION_SELECT_CAMERA);
+        mBroadcastReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (intent.getAction().equals(BroadcastSender.ACTION_SELECT_CAMERA)) {
+                    final int cellId = intent.getIntExtra(BroadcastSender.PARAM_CELL_ID, -1);
+                    if (cellId == -1) { //未指定cellId，即发给主屏幕。
+                        final String playId = intent.getStringExtra(BroadcastSender.PARAM_PLAY_ID);
+                        final boolean selected = intent.getBooleanExtra(BroadcastSender.PARAM_SELECTED, false);
+                        if (playId != null) {
+                            if (selected) {
+                                if (!mSelectedCameraIds.contains(playId))
+                                    mSelectedCameraIds.add(playId);
+                            } else {
+                                if (mSelectedCameraIds.contains(playId))
+                                    mSelectedCameraIds.remove(playId);
+                            }
+                        }
+                    }
+                }
+            }
+        };
+        mContext.registerReceiver(mBroadcastReceiver, intentFilter);
     }
 
     private void initFragment() {
@@ -68,7 +106,8 @@ public class FullscreenActivity extends AppCompatActivity {
     }
 
     private void initControls() {
-        findViewById(R.id.set_router_btn).setOnClickListener(new View.OnClickListener() {
+        mSettingsBtn = findViewById(R.id.set_router_btn);
+        mSettingsBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(FullscreenActivity.this);
@@ -134,7 +173,21 @@ public class FullscreenActivity extends AppCompatActivity {
                 setViews(9);
             }
         });
+        findViewById(R.id.reset_btn).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                final Router router = RuntimePool.getValue(Router.class);
+                if (router != null) {
+                    loadIPC(router);
+                } else {
+                    Toast.makeText(FullscreenActivity.this, R.string.no_router, Toast.LENGTH_SHORT).show();
+                    mSettingsBtn.callOnClick();
+                }
+            }
+        });
         setViews(1);
+        mControlMenu = findViewById(R.id.fullscreen_content_controls);
+        toggleControlMenu(false);
     }
 
     private void initRouterManager() {
@@ -156,6 +209,13 @@ public class FullscreenActivity extends AppCompatActivity {
     }
 
     private void loadIPC(final Router router) {
+        if (router == null) return;
+        new Handler(getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(FullscreenActivity.this, R.string.loading_camera, Toast.LENGTH_SHORT).show();
+            }
+        });
         router.getRouterSession().getCameraManager().reloadIPCAsync(false, new Action1<Throwable>() {
             @Override
             public void call(final Throwable throwable) {
@@ -164,7 +224,12 @@ public class FullscreenActivity extends AppCompatActivity {
                     public void run() {
                         if (throwable != null) {
                             throwable.printStackTrace();
-                            Toast.makeText(mContext, router.getName() + getText(R.string.get_camera_faild) + throwable.getMessage(), Toast.LENGTH_SHORT).show();
+                            new Handler(getMainLooper()).post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Toast.makeText(mContext, router.getName() + getText(R.string.get_camera_failed) + throwable.getMessage(), Toast.LENGTH_SHORT).show();
+                                }
+                            });
                         } else {
                             final List<IPCamera> cameraList = router.getRouterSession().getCameraManager().getIPCManager().getCameraList();
                             if (cameraList.size() > 0) {
@@ -187,49 +252,77 @@ public class FullscreenActivity extends AppCompatActivity {
             int m = integer - size;
             if (m >= 0 && m <= match) {
                 result = integer;
+                match = m;
             }
             if (match == 0) break;
         }
         try {
             return mFragments.get(result).newInstance();
-        } catch (InstantiationException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return null;
     }
 
-    private void setViews(final int size) {
-        if (mCurrentSize != size) {
-            mCurrentSize = size;
-            new AsyncTask<Void, Void, Void>() {
+    private void changFragment(Fragment fragment) {
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        // 将 cell_view_container View 中的内容替换为此 Fragment ，
+        // 然后将该事务添加到返回堆栈，以便用户可以向后导航
+        transaction.replace(R.id.cell_view_container, fragment);
+        // 执行事务
+        transaction.commit();
 
-                @Override
-                protected Void doInBackground(Void... params) {
-                    FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-                    // 将 cell_view_container View 中的内容替换为此 Fragment ，
-                    // 然后将该事务添加到返回堆栈，以便用户可以向后导航
-                    transaction.replace(R.id.cell_view_container, selectFragment(size));
-                    // 执行事务
-                    transaction.commit();
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    if (mCameraList.size() > 0)
-                        for (int i = 0; i < mCameraList.size(); i++) {
-                            if (i >= mCurrentSize) break;
-                            final IPCamera camera = mCameraList.get(i);
-                            BroadcastSender.sendPlayAction(mContext, i, camera.getDeviceId());
-                        }
-                    return null;
-                }
-            }.execute();
-        }
+        mCurrentFragment = fragment;
 
     }
+
+    private synchronized void setViews(final int size) {
+        final long currentTimeMillis = System.currentTimeMillis();
+        if (currentTimeMillis - mLastChangeFragmentTime < 500) return;
+        mLastChangeFragmentTime = currentTimeMillis;
+        final Fragment fragment = selectFragment(size);
+        if (fragment == null) return;
+        final boolean selectedCamera = mSelectedCameraIds.size() > 0;
+        if (!fragment.equals(mCurrentFragment)) {
+            changFragment(fragment);
+        } else {
+            if (!selectedCamera) return;
+            BroadcastSender.sendStopAllAction(mContext);
+        }
+        new AsyncTask<Void, Void, Void>() {
+            @Override
+            protected Void doInBackground(Void... params) {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                if (selectedCamera) {
+                    final Router router = RuntimePool.getValue(Router.class);
+                    if (router != null) {
+                        final IPCManager ipcManager = router.getRouterSession().getCameraManager().getIPCManager();
+                        for (int i = 0; i < mSelectedCameraIds.size(); i++) {
+                            final String deviceId = mSelectedCameraIds.get(i);
+                            final IPCamera camera = ipcManager.getCamera(deviceId);
+                            if (camera != null) {
+                                BroadcastSender.sendPlayAction(mContext, i, deviceId);
+                            }
+                        }
+                    }
+                    mSelectedCameraIds.clear();
+                } else {
+                    for (int i = 0; i < mCameraList.size(); i++) {
+                        if (i >= size) break;
+                        final IPCamera camera = mCameraList.get(i);
+                        BroadcastSender.sendPlayAction(mContext, i, camera.getDeviceId());
+                    }
+                }
+                return null;
+            }
+        }.execute();
+
+    }
+
 
     private void setRouter(Router router) {
         final Router value = RuntimePool.getValue(Router.class);
@@ -249,6 +342,55 @@ public class FullscreenActivity extends AppCompatActivity {
     protected void onPostResume() {
         super.onPostResume();
         hideStatusBar();
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            if (!readyExit) {
+                readyExit = true;
+                Toast.makeText(this, "再按一下退出", Toast.LENGTH_SHORT).show();
+                new AsyncTask<Void, Void, Void>() {
+                    @Override
+                    protected Void doInBackground(Void... params) {
+                        try {
+                            Thread.sleep(1500);
+                        } catch (InterruptedException e) {
+                        }
+                        readyExit = false;
+                        return null;
+                    }
+                }.execute();
+                return true;
+            } else {
+                android.os.Process.killProcess(android.os.Process.myPid());
+            }
+        }
+        if (keyCode == KeyEvent.KEYCODE_MENU) {
+            toggleControlMenu(mControlMenu.getVisibility() == View.GONE);
+            return true;
+        }
+        if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT || keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
+            if (mControlMenu.getVisibility() == View.VISIBLE)
+                toggleControlMenu(false);
+        }
+        return super.onKeyDown(keyCode, event);
+    }
+
+    @Override
+    protected void onDestroy() {
+        mContext.unregisterReceiver(mBroadcastReceiver);
+        super.onDestroy();
+    }
+
+    private void toggleControlMenu(boolean show) {
+        if (show) {
+            mControlMenu.setVisibility(View.VISIBLE);
+            findViewById(R.id.single_view_btn).requestFocus();
+        } else {
+            mControlMenu.setVisibility(View.GONE);
+            mControlMenu.requestFocus();
+        }
     }
 
     private void hideStatusBar() {

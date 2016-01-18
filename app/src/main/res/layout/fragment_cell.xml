@@ -1,14 +1,25 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_margin="1dp"
     android:layout_height="match_parent"
     tools:context="layout.CellFragment">
+
+    <Switch
+        android:id="@+id/cell_btn"
+        style="@style/CellSelector" />
 
     <android.opengl.GLSurfaceView
         android:id="@+id/gl_view"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        android:layout_margin="2dp" />
+    <ImageView
+        android:id="@+id/cell_selected"
+        android:visibility="gone"
+        android:contentDescription="@string/checked"
+        android:src="@drawable/checked"
+        android:layout_width="80dp"
+        android:layout_height="80dp" />
 
     <TextView
         android:id="@+id/cell_title"
@@ -17,7 +28,8 @@
         android:gravity="center"
         android:keepScreenOn="true"
         android:text="@string/cell_title"
+        android:textAppearance="?android:attr/textAppearanceMedium"
         android:textColor="#33b5e5"
         android:textStyle="bold" />
 
-</FrameLayout>
+</RelativeLayout>

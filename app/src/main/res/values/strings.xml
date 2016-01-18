@@ -12,9 +12,12 @@
     <string name="title_activity_main">MainActivity</string>
     <string name="action_settings">Settings</string>
     <string name="section_format">Hello World from section: %1$d</string>
-    <string name="single_view">单画面</string>
-    <string name="four_view">四画面</string>
-    <string name="nine_view">九画面</string>
+    <string name="single_view">一格</string>
+    <string name="four_view">四格</string>
+    <string name="nine_view">九格</string>
     <string name="invalid_sn">无效序列号</string>
-    <string name="get_camera_faild">加载摄像头失败。</string>
+    <string name="get_camera_failed">加载摄像头失败。</string>
+    <string name="checked">选中</string>
+    <string name="loading_camera">正在加载摄像头...</string>
+    <string name="no_router">未连接路由器，请连接后路由器后再试！</string>
 </resources>

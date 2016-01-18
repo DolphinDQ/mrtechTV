@@ -9,11 +9,11 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
+import android.widget.CompoundButton;
+import android.widget.Switch;
 
 import mrtech.core.BroadcastSender;
 import mrtech.core.RuntimePool;
@@ -41,6 +41,8 @@ public class CellFragment extends Fragment {
     private IPCManager mIPCManager;
     private Subscription mSubscription;
     private VideoRenderer mRenderer;
+    private View mCellSelected;
+    private Switch mCellSelector;
 
     public CellFragment() {
         // Required empty public constructor
@@ -71,14 +73,20 @@ public class CellFragment extends Fragment {
 
     @Override
     public void onStart() {
+        initBroadcastReceiver();
         super.onStart();
-        initBroadcastListener();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+//        play(null);
     }
 
     @Override
     public void onStop() {
         super.onStop();
-
+        stop();
         mContext.unregisterReceiver(mBroadcastReceiver);
     }
 
@@ -88,6 +96,25 @@ public class CellFragment extends Fragment {
 //        ((TextView) getView().findViewById(R.id.text_view)).setText("Index:" + mCellId);
         final GLSurfaceView glSurfaceView = (GLSurfaceView) getView().findViewById(R.id.gl_view);
         mRenderer = IPCManager.initGLSurfaceView(glSurfaceView);
+        mCellSelected = getView().findViewById(R.id.cell_selected);
+//        getView().findViewById(R.id.cell_btn).setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                Toast.makeText(getContext(), "full", Toast.LENGTH_SHORT).show();
+//            }
+//        });
+        mCellSelector = (Switch) getView().findViewById(R.id.cell_btn);
+        mCellSelector.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                BroadcastSender.sendSelectCameraAction(getContext(), null, mPlayId, isChecked);
+                if (isChecked) {
+                    mCellSelected.setVisibility(View.VISIBLE);
+                } else {
+                    mCellSelected.setVisibility(View.GONE);
+                }
+            }
+        });
     }
 
     private void initArguments() {
@@ -98,15 +125,19 @@ public class CellFragment extends Fragment {
         }
     }
 
-    private void initBroadcastListener() {
+    private void initBroadcastReceiver() {
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(BroadcastSender.ACTION_PLAY_ALL);
         intentFilter.addAction(BroadcastSender.ACTION_PLAY);
+        intentFilter.addAction(BroadcastSender.ACTION_STOP_ALL);
         mBroadcastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 if (intent.getAction().equals(BroadcastSender.ACTION_PLAY_ALL)) {
                     play(null);
+                }
+                if (intent.getAction().equals(BroadcastSender.ACTION_STOP_ALL)){
+                    stop();
                 }
                 if (intent.getIntExtra(BroadcastSender.PARAM_CELL_ID, -1) != mCellId) return;
                 if (intent.getAction().equals(BroadcastSender.ACTION_PLAY)) {
@@ -148,15 +179,14 @@ public class CellFragment extends Fragment {
                 final View view = getView();
                 if (view == null) return;
                 final View title = view.findViewById(R.id.cell_title);
-                if (isPlay){
+                if (isPlay) {
                     title.setVisibility(View.GONE);
-                }else {
+                } else {
                     title.setVisibility(View.VISIBLE);
                 }
             }
         });
     }
-
 
     private void stop() {
         setPlayControls(false);
@@ -166,6 +196,12 @@ public class CellFragment extends Fragment {
         }
         if (mPlayer != null)
             mPlayer.stop();
+//        if (mCellSelector != null && mCellSelector.isChecked()) {
+//            mCellSelector.setChecked(false);
+//        }
+        if (mRenderer != null) {
+
+        }
     }
 
     @Override

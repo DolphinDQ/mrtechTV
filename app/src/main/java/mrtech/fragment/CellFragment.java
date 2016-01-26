@@ -80,7 +80,7 @@ public class CellFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-//        play(null);
+        play(null);
     }
 
     @Override
@@ -136,7 +136,7 @@ public class CellFragment extends Fragment {
                 if (intent.getAction().equals(BroadcastSender.ACTION_PLAY_ALL)) {
                     play(null);
                 }
-                if (intent.getAction().equals(BroadcastSender.ACTION_STOP_ALL)){
+                if (intent.getAction().equals(BroadcastSender.ACTION_STOP_ALL)) {
                     stop();
                 }
                 if (intent.getIntExtra(BroadcastSender.PARAM_CELL_ID, -1) != mCellId) return;
@@ -160,6 +160,7 @@ public class CellFragment extends Fragment {
         final IPCPlayer player = getPlayer();
         if (player == null) return;
         final IPCamera camera = mIPCManager.getCamera(playId);
+        if (mSubscription != null) mSubscription.unsubscribe();
         mSubscription = mIPCManager.createEventManager(camera).subscribeCameraStatus(new Action1<IPCStateChanged>() {
             @Override
             public void call(IPCStateChanged ipcStateChanged) {

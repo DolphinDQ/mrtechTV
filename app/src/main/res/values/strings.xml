@@ -20,4 +20,5 @@
     <string name="checked">选中</string>
     <string name="loading_camera">正在加载摄像头...</string>
     <string name="no_router">未连接路由器，请连接后路由器后再试！</string>
+    <string name="six_view">六格</string>
 </resources>

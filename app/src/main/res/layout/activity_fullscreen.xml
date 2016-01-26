@@ -25,6 +25,10 @@
             android:nextFocusUp="@+id/set_router_btn"
             android:text="@string/nine_view" />
         <Button
+            android:id="@+id/six_view_btn"
+            style="@style/ToolButton"
+            android:text="@string/six_view" />
+        <Button
             android:id="@+id/four_view_btn"
             style="@style/ToolButton"
             android:text="@string/four_view" />

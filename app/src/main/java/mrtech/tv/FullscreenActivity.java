@@ -29,6 +29,7 @@ import mrtech.core.RuntimePool;
 import mrtech.fragment.FourViewFragment;
 import mrtech.fragment.NineViewFragment;
 import mrtech.fragment.SingleViewFragment;
+import mrtech.fragment.SixViewFragment;
 import mrtech.smarthome.ipc.IPCManager;
 import mrtech.smarthome.ipc.IPCamera;
 import mrtech.smarthome.router.Router;
@@ -102,6 +103,7 @@ public class FullscreenActivity extends AppCompatActivity {
     private void initFragment() {
         mFragments.put(1, SingleViewFragment.class);
         mFragments.put(4, FourViewFragment.class);
+        mFragments.put(6, SixViewFragment.class);
         mFragments.put(9, NineViewFragment.class);
     }
 
@@ -167,12 +169,20 @@ public class FullscreenActivity extends AppCompatActivity {
                 setViews(4);
             }
         });
+        findViewById(R.id.six_view_btn).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                setViews(6);
+            }
+        });
         findViewById(R.id.nine_view_btn).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 setViews(9);
             }
         });
+
+
         findViewById(R.id.reset_btn).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -323,7 +333,6 @@ public class FullscreenActivity extends AppCompatActivity {
 
     }
 
-
     private void setRouter(Router router) {
         final Router value = RuntimePool.getValue(Router.class);
         if (value == null || !value.equals(router)) {
@@ -380,6 +389,10 @@ public class FullscreenActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         mContext.unregisterReceiver(mBroadcastReceiver);
+        for (Subscription subscription : subscriptions) {
+            subscription.unsubscribe();
+        }
+        subscriptions.clear();
         super.onDestroy();
     }
 

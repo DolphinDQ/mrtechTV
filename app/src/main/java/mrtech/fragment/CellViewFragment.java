@@ -20,42 +20,14 @@ import mrtech.tv.R;
 public abstract class CellViewFragment extends Fragment {
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
-    }
-
-    @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-//        Toast.makeText(getActivity(), "fragments:" + getChildFragmentManager().getFragments().size(), Toast.LENGTH_SHORT).show();
         final List<Fragment> fragments = getChildFragmentManager().getFragments();
         for (int i = 0; i < fragments.size(); i++) {
-            ((CellFragment)fragments.get(i)).setCellId(i);
-        }
-    }
-
-
-    private List<View> findAllCell(TableLayout tableLayout) {
-        final List<TableRow> rows = findAllView(tableLayout, TableRow.class);
-        ArrayList<View> result = new ArrayList<>();
-        for (TableRow row : rows) {
-            result.addAll(findAllView(row, View.class));
-        }
-        return result;
-    }
-
-    private <T extends View> List<T> findAllView(ViewGroup group, Class<T> cls) {
-        final int childCount = group.getChildCount();
-        ArrayList<T> result = new ArrayList<>();
-        for (int i = 0; i < childCount; i++) {
-            final View child = group.getChildAt(i);
-            if (child.getClass().isAssignableFrom(cls)) {
-                result.add((T) child);
+            final Fragment fragment = fragments.get(i);
+            if (fragment instanceof CellFragment) {
+                ((CellFragment) fragment).setCellId(i);
             }
         }
-        return result;
     }
-
-
 }

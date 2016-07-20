@@ -201,7 +201,6 @@ public class CellFragment extends Fragment {
 //            mCellSelector.setChecked(false);
 //        }
         if (mRenderer != null) {
-
         }
     }
 

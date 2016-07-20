@@ -9,6 +9,7 @@ import android.os.AsyncTask;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -66,7 +67,9 @@ public class FullscreenActivity extends AppCompatActivity {
         mContext = this;
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_fullscreen);
-        getSupportActionBar().hide();
+        ActionBar supportActionBar = getSupportActionBar();
+        if (supportActionBar != null)
+            supportActionBar.hide();
         initBroadcastReceiver();
         initRouterManager();
         initFragment();
@@ -342,10 +345,6 @@ public class FullscreenActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    protected void onPostCreate(Bundle savedInstanceState) {
-        super.onPostCreate(savedInstanceState);
-    }
 
     @Override
     protected void onPostResume() {
@@ -365,6 +364,7 @@ public class FullscreenActivity extends AppCompatActivity {
                         try {
                             Thread.sleep(1500);
                         } catch (InterruptedException e) {
+                            //igne
                         }
                         readyExit = false;
                         return null;
